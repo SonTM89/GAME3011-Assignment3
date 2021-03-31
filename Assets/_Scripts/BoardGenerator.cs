@@ -7,14 +7,18 @@ public class BoardGenerator : MonoBehaviour
     public int width;
     public int height;
     public GameObject tilePrefab;
+
+    public GameObject[] gems;
     private TileScript[,] allTiles;
+    public GameObject[,] board;
 
     // Start is called before the first frame update
     void Start()
     {
         allTiles = new TileScript[width, height];
+        board = new GameObject[width, height];
 
-        SetUp();
+        GenerateBoard();
     }
 
     // Update is called once per frame
@@ -23,7 +27,7 @@ public class BoardGenerator : MonoBehaviour
         
     }
 
-    public void SetUp()
+    public void GenerateBoard()
     {
         for (int i =0; i < width; i++)
         {
@@ -34,6 +38,12 @@ public class BoardGenerator : MonoBehaviour
 
                 testTile.transform.parent = this.transform;
                 testTile.name = "( " + i + "," + j + " )";
+
+                int currentGem = Random.Range(0, gems.Length);
+                GameObject tempGem = Instantiate(gems[currentGem], tempPos, Quaternion.identity);
+                tempGem.transform.parent = this.transform;
+                tempGem.name = "( " + i + "," + j + " )";
+                board[i, j] = tempGem;
             }
         }
     }
