@@ -164,7 +164,7 @@ MonoBehaviour:
   - {fileID: 7607476920341614979, guid: f892d050976bbfa48bbde17b20eb8b99, type: 3}
   - {fileID: 8406658514140243950, guid: 8dae7df1d031c0146941276fc6dd962f, type: 3}
   - {fileID: 5376381368632264947, guid: a59dd1c8a2a1ed44b810e5665adfe199, type: 3}
-  currentMatches: []
+  currentMatchesList: []
   currentGem: {fileID: 0}
 --- !u!4 &598686026
 Transform:

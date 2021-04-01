@@ -110,14 +110,114 @@ public class BoardGenerator : MonoBehaviour
         return false;
     }
 
+
+    private bool ColumnOrRow()
+    {
+        int numberHorizontal = 0;
+        int numberVertical = 0;
+        GemBehaviour firstGem = currentMatchesList[0].GetComponent<GemBehaviour>();
+
+        if(firstGem != null)
+        {
+            foreach (GameObject currentGem in currentMatchesList)
+            {
+                GemBehaviour gem = currentGem.GetComponent<GemBehaviour>();
+
+                if(gem.row == firstGem.row)
+                {
+                    numberHorizontal++;
+                }
+                if(gem.column == firstGem.column)
+                {
+                    numberVertical++;
+                }
+            }
+        }
+
+        return (numberVertical == 5 || numberHorizontal == 5);
+    }
+
+
+
+    private void CheckToMakeSpecialGem()
+    {
+        if (currentMatchesList.Count == 4 || currentMatchesList.Count == 7)
+        {
+            CheckToSetSpecialClearRowOrColumnGem();
+        }
+        if (currentMatchesList.Count == 5 || currentMatchesList.Count == 8)
+        {
+            if(ColumnOrRow())
+            {
+                if(currentGem != null)
+                {
+                    if(currentGem.isMatched)
+                    {
+                        if(!currentGem.isColorClearGem)
+                        {
+                            currentGem.isMatched = false;
+                            currentGem.CreateSpecialGem(SpecialGem.COLOR_CLEAR);
+                        }
+                    }
+                    else
+                    {
+                        if(currentGem.nextGem != null)
+                        {
+                            GemBehaviour nextGemBehaviour = currentGem.nextGem.GetComponent<GemBehaviour>();
+                            if(nextGemBehaviour.isMatched)
+                            {
+                                if(!nextGemBehaviour.isColorClearGem)
+                                {
+                                    nextGemBehaviour.isMatched = false;
+                                    nextGemBehaviour.CreateSpecialGem(SpecialGem.COLOR_CLEAR);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (currentGem != null)
+                {
+                    if (currentGem.isMatched)
+                    {
+                        if (!currentGem.isSquareClearGem)
+                        {
+                            currentGem.isMatched = false;
+                            currentGem.CreateSpecialGem(SpecialGem.SQUARE_CLEAR);
+                        }
+                    }
+                    else
+                    {
+                        if (currentGem.nextGem != null)
+                        {
+                            GemBehaviour nextGemBehaviour = currentGem.nextGem.GetComponent<GemBehaviour>();
+                            if (nextGemBehaviour.isMatched)
+                            {
+                                if (!nextGemBehaviour.isSquareClearGem)
+                                {
+                                    nextGemBehaviour.isMatched = false;
+                                    nextGemBehaviour.CreateSpecialGem(SpecialGem.SQUARE_CLEAR);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
     private void DestroyMatchesAt(int column, int row)
     {
         if(board[column,row].GetComponent<GemBehaviour>().isMatched)
         {
             
-            if(currentMatchesList.Count == 4 || currentMatchesList.Count == 7)
+            if(currentMatchesList.Count >= 4)
             {
-                CheckToSetSpecialGem();
+                CheckToMakeSpecialGem();
+                //CheckToSetSpecialClearRowOrColumnGem();
             }
 
             //currentMatches.Remove(board[column, row]);
@@ -270,7 +370,31 @@ public class BoardGenerator : MonoBehaviour
         return currentGems;
     }
 
-    private void  AddAndMatchGem(GameObject gem)
+
+    private List<GameObject> CheckMatchedGemsInSquare(GemBehaviour gem1, GemBehaviour gem2, GemBehaviour gem3)
+    {
+        List<GameObject> currentGems = new List<GameObject>();
+
+        if (gem1.isSquareClearGem)
+        {
+            currentMatchesList.Union(MatchedGemsInSquare(gem1.column, gem1.row));
+        }
+
+        if (gem2.isSquareClearGem)
+        {
+            currentMatchesList.Union(MatchedGemsInSquare(gem2.column, gem2.row));
+        }
+
+        if (gem3.isSquareClearGem)
+        {
+            currentMatchesList.Union(MatchedGemsInSquare(gem3.column, gem3.row));
+        }
+
+        return currentGems;
+    }
+
+
+        private void  AddAndMatchGem(GameObject gem)
     {
         if (!currentMatchesList.Contains(gem))
         {
@@ -335,6 +459,8 @@ public class BoardGenerator : MonoBehaviour
 
                 currentMatchesList.Union(CheckMatchedGemsInColumn(gem1Behaviour, gem2GemBehaviour, gem3GemBehaviour));
 
+                currentMatchesList.Union(CheckMatchedGemsInSquare(gem1Behaviour, gem2GemBehaviour, gem3GemBehaviour));
+
                 AddAndMatchNearbyGemsToList(gem1, gem2, gem3);
             }
         }
@@ -392,7 +518,28 @@ public class BoardGenerator : MonoBehaviour
         return gems;
     }
 
-    public void CheckToSetSpecialGem()
+
+    List<GameObject> MatchedGemsInSquare(int column, int row)
+    {
+        List<GameObject> gems = new List<GameObject>();
+
+        for(int i = column - 1; i <= column + 1; i++)
+        {
+            for(int j = row - 1; j <= row + 1; j++)
+            {
+                if(i >= 0 && i < width && j >=0 && j < height)
+                {
+                    gems.Add(board[i, j]);
+                    board[i, j].GetComponent<GemBehaviour>().isMatched = true;
+                }
+            }
+        }
+
+        return gems;
+    }
+
+
+    public void CheckToSetSpecialClearRowOrColumnGem()
     {
         if(currentGem != null)
         {
@@ -422,11 +569,11 @@ public class BoardGenerator : MonoBehaviour
 
         if ((currentGem.changedAngle > -45.0f && currentGem.changedAngle <= 45.0f) || (currentGem.changedAngle <= -135.0f || currentGem.changedAngle > 135.0f))
         {
-            gem.CreateRowClearGem();
+            gem.CreateSpecialGem(SpecialGem.ROW_CLEAR);
         }
         else
         {
-            gem.CreateColumnClearGem();
+            gem.CreateSpecialGem(SpecialGem.COLUMN_CLEAR);
         }
     }
 }

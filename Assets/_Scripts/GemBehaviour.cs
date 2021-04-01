@@ -2,6 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
+public enum SpecialGem
+{
+    ROW_CLEAR,
+    COLUMN_CLEAR,
+    COLOR_CLEAR,
+    SQUARE_CLEAR
+}
+
 public class GemBehaviour : MonoBehaviour
 {
     [Header("Board Variables")]
@@ -29,16 +38,20 @@ public class GemBehaviour : MonoBehaviour
     public bool isColorClearGem;
     public bool isColumnClearGem;
     public bool isRowClearGem;
+    public bool isSquareClearGem;
 
     public GameObject columnClearGem;
     public GameObject rowclearGem;
     public GameObject colorClearGem;
+    public GameObject squareClearGem;
 
     // Start is called before the first frame update
     void Start()
     {
         isColumnClearGem = false;
         isRowClearGem = false;
+        isColorClearGem = false;
+        isSquareClearGem = false;
 
         miniGame = FindObjectOfType<BoardGenerator>();
         findMatches = FindObjectOfType<FindMatches>();
@@ -65,7 +78,7 @@ public class GemBehaviour : MonoBehaviour
             transform.localScale = Vector3.Lerp(transform.localScale, new Vector3(1.3f, 1.3f, 1.3f), 0.025f);
         }
 
-        if(isColumnClearGem || isRowClearGem)
+        if(isColumnClearGem || isRowClearGem || isSquareClearGem)
         {
             SpriteRenderer sRenderer = GetComponent<SpriteRenderer>();
             sRenderer.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
@@ -124,12 +137,13 @@ public class GemBehaviour : MonoBehaviour
 
 
 
+    // Testing
     private void OnMouseOver()
     {
         if(Input.GetMouseButtonDown(1))
         {
-            isColorClearGem = true;
-            GameObject clearGem = Instantiate(colorClearGem, transform.position, Quaternion.identity);
+            isSquareClearGem = true;
+            GameObject clearGem = Instantiate(squareClearGem, transform.position, Quaternion.identity);
             clearGem.transform.parent = this.transform;
         }
     }
@@ -164,12 +178,12 @@ public class GemBehaviour : MonoBehaviour
     {
         if(Mathf.Abs(finalPos.y - firstPos.y) > changedThreshold || Mathf.Abs(finalPos.x - firstPos.x) > changedThreshold)
         {
+            miniGame.currentState = GameState.WAIT;
+
             changedAngle = Mathf.Atan2(finalPos.y - firstPos.y, finalPos.x - firstPos.x) * 180.0f / Mathf.PI;
             //Debug.Log(changedAngle);
 
-            GemChangingPosition();
-
-            miniGame.currentState = GameState.WAIT;
+            ProcessChangingPosition();
 
             miniGame.currentGem = this;
         }
@@ -181,46 +195,73 @@ public class GemBehaviour : MonoBehaviour
     }
 
    
-    private void GemChangingPosition()
+    private void GemChangingPosition(Vector2 direction)
+    {
+        nextGem = miniGame.board[column + (int)direction.x, row + (int)direction.y];
+        previousRow = row;
+        previousColumn = column;
+        nextGem.GetComponent<GemBehaviour>().column += -1 * (int)direction.x;
+        nextGem.GetComponent<GemBehaviour>().row += -1 * (int)direction.y;
+        column += (int)direction.x;
+        row += (int)direction.y;
+        StartCoroutine(CheckChanging());
+    }
+
+
+    private void ProcessChangingPosition()
     {
         // Right side
         if(changedAngle > -45.0f && changedAngle <= 45.0f && column < miniGame.width - 1)
         {
-            nextGem = miniGame.board[column + 1, row];
-            previousRow = row;
-            previousColumn = column;
-            nextGem.GetComponent<GemBehaviour>().column -= 1;
-            column += 1;
+            //nextGem = miniGame.board[column + 1, row];
+            //previousRow = row;
+            //previousColumn = column;
+            //nextGem.GetComponent<GemBehaviour>().column -= 1;
+            //column += 1;
+            //StartCoroutine(CheckChanging());
+
+            GemChangingPosition(Vector2.right);
         } 
         // Up side
         else if (changedAngle > 45.0f && changedAngle <= 135.0f && row < miniGame.height - 1)
         {
-            nextGem = miniGame.board[column, row + 1];
-            previousRow = row;
-            previousColumn = column;
-            nextGem.GetComponent<GemBehaviour>().row -= 1;
-            row += 1;
+            //nextGem = miniGame.board[column, row + 1];
+            //previousRow = row;
+            //previousColumn = column;
+            //nextGem.GetComponent<GemBehaviour>().row -= 1;
+            //row += 1;
+            //StartCoroutine(CheckChanging());
+
+            GemChangingPosition(Vector2.up);
         } 
         // Left side
         else if ((changedAngle > 135.0f || changedAngle <= -135.0f) && column > 0)
         {
-            nextGem = miniGame.board[column - 1, row];
-            previousRow = row;
-            previousColumn = column;
-            nextGem.GetComponent<GemBehaviour>().column += 1;
-            column -= 1;
+            //nextGem = miniGame.board[column - 1, row];
+            //previousRow = row;
+            //previousColumn = column;
+            //nextGem.GetComponent<GemBehaviour>().column += 1;
+            //column -= 1;
+            //StartCoroutine(CheckChanging());
+
+            GemChangingPosition(Vector2.left);
         }
         // Down side
         else if (changedAngle > -135.0f && changedAngle <= -45.0f && row > 0)
         {
-            nextGem = miniGame.board[column, row - 1];
-            previousRow = row;
-            previousColumn = column;
-            nextGem.GetComponent<GemBehaviour>().row += 1;
-            row -= 1;
+            //nextGem = miniGame.board[column, row - 1];
+            //previousRow = row;
+            //previousColumn = column;
+            //nextGem.GetComponent<GemBehaviour>().row += 1;
+            //row -= 1;
+            //StartCoroutine(CheckChanging());
+
+            GemChangingPosition(Vector2.down);
         }
 
-        StartCoroutine(CheckChanging());
+        miniGame.currentState = GameState.MOVE;
+
+        
     }
 
 
@@ -231,7 +272,7 @@ public class GemBehaviour : MonoBehaviour
             miniGame.MatchedGemsOfColor(nextGem.tag);
             isMatched = true;
         }
-        else if(nextGem.GetComponent<GemBehaviour>().isColumnClearGem)
+        else if(nextGem.GetComponent<GemBehaviour>().isColorClearGem)
         {
             miniGame.MatchedGemsOfColor(this.gameObject.tag);
             nextGem.GetComponent<GemBehaviour>().isMatched = true;
@@ -296,18 +337,65 @@ public class GemBehaviour : MonoBehaviour
         }
     }
 
-    public void CreateRowClearGem()
-    {
-        isRowClearGem = true;
-        GameObject tempGem = Instantiate(rowclearGem, transform.position, Quaternion.identity);
-        tempGem.transform.parent = this.transform;
-    }
+
+    //public void CreateRowClearGem()
+    //{
+    //    isRowClearGem = true;
+    //    GameObject tempGem = Instantiate(rowclearGem, transform.position, Quaternion.identity);
+    //    tempGem.transform.parent = this.transform;
+    //}
 
 
-    public void CreateColumnClearGem()
+    //public void CreateColumnClearGem()
+    //{
+    //    isColumnClearGem = true;
+    //    GameObject tempGem = Instantiate(columnClearGem, transform.position, Quaternion.identity);
+    //    tempGem.transform.parent = this.transform;
+    //}
+
+    //public void CreateColorClearGem()
+    //{
+    //    isColorClearGem = true;
+    //    GameObject tempGem = Instantiate(colorClearGem, transform.position, Quaternion.identity);
+    //    tempGem.transform.parent = this.transform;
+    //}
+
+    //public void CreateSquareClearGem()
+    //{
+    //    isSquareClearGem = true;
+    //    GameObject tempGem = Instantiate(squareClearGem, transform.position, Quaternion.identity);
+    //    tempGem.transform.parent = this.transform;
+    //}
+
+
+    public void CreateSpecialGem(SpecialGem type)
     {
-        isColumnClearGem = true;
-        GameObject tempGem = Instantiate(columnClearGem, transform.position, Quaternion.identity);
-        tempGem.transform.parent = this.transform;
+        GameObject tempGem;
+
+        switch(type)
+        {
+            case SpecialGem.ROW_CLEAR:
+                isRowClearGem = true;
+                tempGem = Instantiate(rowclearGem, transform.position, Quaternion.identity);
+                tempGem.transform.parent = this.transform;
+                break;
+            case SpecialGem.COLUMN_CLEAR:
+                isColumnClearGem = true;
+                tempGem = Instantiate(columnClearGem, transform.position, Quaternion.identity);
+                tempGem.transform.parent = this.transform;
+                break;
+            case SpecialGem.COLOR_CLEAR:
+                isColorClearGem = true;
+                tempGem = Instantiate(colorClearGem, transform.position, Quaternion.identity);
+                tempGem.transform.parent = this.transform;
+                break;
+            case SpecialGem.SQUARE_CLEAR:
+                isSquareClearGem = true;
+                tempGem = Instantiate(squareClearGem, transform.position, Quaternion.identity);
+                tempGem.transform.parent = this.transform;
+                break;
+            default:
+                break;
+        }
     }
 }

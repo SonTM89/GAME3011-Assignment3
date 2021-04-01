@@ -125,6 +125,8 @@ MonoBehaviour:
   isColorClearGem: 0
   isColumnClearGem: 0
   isRowClearGem: 0
+  isSquareClearGem: 0
   columnClearGem: {fileID: 4276775293567481803, guid: 06b7ecd880edb6a4eaed0d69999a6056, type: 3}
   rowclearGem: {fileID: 5745488859741840719, guid: d7b9c23af78baf24782c1e1b454d44a1, type: 3}
   colorClearGem: {fileID: 5025522396831955092, guid: f22e11682746a804e90c2c752ed18651, type: 3}
+  squareClearGem: {fileID: 4353014480169437151, guid: 4fecc5d6b30d2b54986065c16fe9b74d, type: 3}
