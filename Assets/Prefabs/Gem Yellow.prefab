@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 9201978900004250240}
   m_Layer: 0
   m_Name: Gem Yellow
-  m_TagString: Untagged
+  m_TagString: Yellow
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -112,4 +112,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c03737f45982c684793668ec98d51f09, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  column: 0
+  row: 0
+  targetPosX: 0
+  targetPosY: 0
   changedAngle: 0
