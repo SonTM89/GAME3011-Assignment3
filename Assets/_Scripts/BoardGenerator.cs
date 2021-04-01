@@ -9,6 +9,22 @@ public enum GameState
     MOVE
 }
 
+
+public enum TileType
+{
+    NORMAL,
+    IMMOVABLE,
+    BREAKABLE
+}
+
+[System.Serializable]
+public class SingleTile
+{
+    public int x;
+    public int y;
+    public TileType tiletype;
+}
+
 public class BoardGenerator : MonoBehaviour
 {
     public int width;
@@ -18,20 +34,28 @@ public class BoardGenerator : MonoBehaviour
 
     public GameState currentState;
 
-    public GameObject[] gems;
-    //private TileScript[,] allTiles;
+    public GameObject[] gemTypes;
+
+    public SingleTile[] tilePositionList;
+    
+    [SerializeField] public bool[,] immovableboard;
+    
     public GameObject[,] board;
     private FindMatches findMatches;
 
     public List<GameObject> currentMatchesList = new List<GameObject>();
     public GemBehaviour currentGem;
 
+    public float aspectRatio = 1.1f;
+    public float padding = 2;
+
     // Start is called before the first frame update
     void Start()
     {
         findMatches = FindObjectOfType<FindMatches>();
-        //allTiles = new TileScript[width, height];
+        immovableboard = new bool[width, height];
         board = new GameObject[width, height];
+        SetUpCamera(width, height);
 
         GenerateBoard();
     }
@@ -42,36 +66,63 @@ public class BoardGenerator : MonoBehaviour
         
     }
 
+    public void GenerateImmovableTile()
+    {
+        for (int i = 0; i < tilePositionList.Length; i++)
+        {
+            if (tilePositionList[i].tiletype == TileType.IMMOVABLE)
+            {
+                immovableboard[tilePositionList[i].x, tilePositionList[i].y] = true;
+            }
+        }
+    }
+
     public void GenerateBoard()
     {
+        GenerateImmovableTile();
+
         for (int i =0; i < width; i++)
         {
             for(int j = 0; j < height; j ++)
             {
-                Vector3 tempPos = new Vector3(i, j + offSet, 0);
-                GameObject testTile =  Instantiate(tilePrefab, tempPos, Quaternion.identity) as GameObject;
-
-                testTile.transform.parent = this.transform;
-                testTile.name = "( " + i + "," + j + " )";
-
-                
-                int currentGem = Random.Range(0, gems.Length);
-
-                int maxLoopTime = 0;
-                while (MatchesAt(i, j, gems[currentGem]) && maxLoopTime < 100)
+                if(!immovableboard[i,j])
                 {
-                    currentGem = Random.Range(0, gems.Length);
-                    maxLoopTime++;
-                }
-                maxLoopTime = 0;
-                
-                GameObject tempGem = Instantiate(gems[currentGem], tempPos, Quaternion.identity);
-                tempGem.GetComponent<GemBehaviour>().row = j;
-                tempGem.GetComponent<GemBehaviour>().column = i;
+                    Vector3 tempPos = new Vector3(i, j + offSet, 0);
+                    GameObject testTile = Instantiate(tilePrefab, tempPos, Quaternion.identity) as GameObject;
 
-                tempGem.transform.parent = this.transform;
-                tempGem.name = "( " + i + "," + j + " )";
-                board[i, j] = tempGem;
+                    testTile.transform.parent = this.transform;
+                    testTile.name = "( " + i + "," + j + " )";
+
+
+                    int currentGem = Random.Range(0, gemTypes.Length);
+
+                    int maxLoopTime = 0;
+                    while (MatchesAt(i, j, gemTypes[currentGem]) && maxLoopTime < 100)
+                    {
+                        currentGem = Random.Range(0, gemTypes.Length);
+                        maxLoopTime++;
+                    }
+                    maxLoopTime = 0;
+
+                    GameObject tempGem = Instantiate(gemTypes[currentGem], tempPos, Quaternion.identity);
+                    tempGem.GetComponent<GemBehaviour>().row = j;
+                    tempGem.GetComponent<GemBehaviour>().column = i;
+
+                    tempGem.transform.parent = this.transform;
+                    tempGem.name = "( " + i + "," + j + " )";
+                    board[i, j] = tempGem;
+                } 
+                //else
+                //{
+                //    Vector3 tempPos = new Vector3(i, j + offSet, 0);
+                //    GameObject testTile = Instantiate(tilePrefab, tempPos, Quaternion.identity) as GameObject;
+
+                //    testTile.transform.parent = this.transform;
+                //    testTile.name = "( " + i + "," + j + " )";
+                //    SpriteRenderer sprRen = testTile.GetComponent<SpriteRenderer>();
+                //    sprRen.enabled = true;
+                //    //testTile.transform.position = new Vector3(i, j, 0);
+                //}
             }
         }
     }
@@ -80,30 +131,43 @@ public class BoardGenerator : MonoBehaviour
     {
         if(column > 1 && row > 1)
         {
-            if(board[column - 1, row].tag == obj.tag && board[column - 2, row].tag == obj.tag)
-            {
-                return true;
-            }
-            if (board[column, row - 1].tag == obj.tag && board[column, row - 2].tag == obj.tag)
-            {
-                return true;
-            }
-        }
-        else if(column <= 1 || row <= 1)
-        {
-            if(row > 1)
-            {
-                if (board[column, row - 1].tag == obj.tag && board[column, row - 2].tag == obj.tag)
-                {
-                    return true;
-                }
-            }           
-            else if(column > 1)
+            if(board[column - 1, row] != null && board[column - 2, row] != null)
             {
                 if (board[column - 1, row].tag == obj.tag && board[column - 2, row].tag == obj.tag)
                 {
                     return true;
                 }
+            }
+
+            if (board[column, row - 1] != null && board[column, row - 2] != null)
+            {
+                if (board[column, row - 1].tag == obj.tag && board[column, row - 2].tag == obj.tag)
+                {
+                    return true;
+                }
+            } 
+        }
+        else if(column <= 1 || row <= 1)
+        {
+            if(row > 1)
+            {
+                if (board[column, row - 1] != null && board[column, row - 2] != null)
+                {
+                    if (board[column, row - 1].tag == obj.tag && board[column, row - 2].tag == obj.tag)
+                    {
+                        return true;
+                    }
+                }         
+            }           
+            if(column > 1)
+            {
+                if (board[column - 1, row] != null && board[column - 2, row] != null)
+                {
+                    if (board[column - 1, row].tag == obj.tag && board[column - 2, row].tag == obj.tag)
+                    {
+                        return true;
+                    }
+                }     
             }
         }
 
@@ -243,27 +307,31 @@ public class BoardGenerator : MonoBehaviour
         StartCoroutine(ReconstructBoard());
     }
 
+
     private IEnumerator ReconstructBoard()
     {
-        int nullCount = 0;
-        for (int i = 0; i < width; i++)
+        for(int i = 0; i < width; i++)
         {
-            for (int j = 0; j < height; j++)
+            for(int j = 0; j < height; j++)
             {
-                if(board[i,j] == null)
+                if(!immovableboard[i,j] && board[i,j] == null)
                 {
-                    nullCount++;
-                }
-                else if(nullCount > 0)
-                {
-                    board[i,j].GetComponent<GemBehaviour>().row -= nullCount;
-                    board[i,j] = null; 
+                    for(int k = j+ 1; k < height; k++)
+                    {
+                        if (board[i, k] != null)
+                        {
+                            board[i, k].GetComponent<GemBehaviour>().row = j;
+
+                            board[i, k] = null;
+
+                            break;
+                        }
+                    }
                 }
             }
-            nullCount = 0;
         }
 
-        yield return new WaitForSeconds(0.5f);
+        yield return  new WaitForSeconds(0.5f);
 
         StartCoroutine(FillAndCheckBoard());
     }
@@ -274,11 +342,11 @@ public class BoardGenerator : MonoBehaviour
         {
             for (int j = 0; j < height; j++)
             {
-                if(board[i,j] == null)
+                if(board[i,j] == null && !immovableboard[i, j])
                 {
                     Vector3 temPos = new Vector3(i, j + offSet, 0);
-                    int currentGem = Random.Range(0, gems.Length);
-                    GameObject temp = Instantiate(gems[currentGem], temPos, Quaternion.identity);
+                    int currentGem = Random.Range(0, gemTypes.Length);
+                    GameObject temp = Instantiate(gemTypes[currentGem], temPos, Quaternion.identity);
                     board[i, j] = temp;
                     temp.GetComponent<GemBehaviour>().row = j;
                     temp.GetComponent<GemBehaviour>().column = i;
@@ -576,4 +644,21 @@ public class BoardGenerator : MonoBehaviour
             gem.CreateSpecialGem(SpecialGem.COLUMN_CLEAR);
         }
     }
+
+    private void SetUpCamera(float x, float y)
+    {
+        Vector3 temPos = new Vector3(x / 2, y / 2, -10.0f);
+        Camera.main.transform.position = temPos;
+
+        if(width >= height)
+        {
+            Camera.main.orthographicSize = (width / 2 + padding) * aspectRatio;
+        }
+        else
+        {
+            Camera.main.orthographicSize = height / 2 + padding;
+        }
+    }
+
+    
 }

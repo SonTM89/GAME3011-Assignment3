@@ -118,7 +118,7 @@ public class GemBehaviour : MonoBehaviour
         if (Mathf.Abs(targetPosY - transform.position.y) > 0.1f)
         {
             tempPos = new Vector3(transform.position.x, targetPosY, 0);
-            transform.position = Vector3.Lerp(transform.position, tempPos, 0.3f);
+            transform.position = Vector3.Lerp(transform.position, tempPos, 0.25f);
             if (miniGame.board[column, row] != this.gameObject)
             {
                 miniGame.board[column, row] = this.gameObject;
@@ -200,11 +200,18 @@ public class GemBehaviour : MonoBehaviour
         nextGem = miniGame.board[column + (int)direction.x, row + (int)direction.y];
         previousRow = row;
         previousColumn = column;
-        nextGem.GetComponent<GemBehaviour>().column += -1 * (int)direction.x;
-        nextGem.GetComponent<GemBehaviour>().row += -1 * (int)direction.y;
-        column += (int)direction.x;
-        row += (int)direction.y;
-        StartCoroutine(CheckChanging());
+        if(nextGem != null)
+        {
+            nextGem.GetComponent<GemBehaviour>().column += -1 * (int)direction.x;
+            nextGem.GetComponent<GemBehaviour>().row += -1 * (int)direction.y;
+            column += (int)direction.x;
+            row += (int)direction.y;
+            StartCoroutine(CheckChanging());
+        }
+        else
+        {
+            miniGame.currentState = GameState.MOVE;
+        }
     }
 
 
