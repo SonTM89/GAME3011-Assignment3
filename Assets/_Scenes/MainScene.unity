@@ -152,18 +152,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb01e5f0978b9a245820d62fc403134b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 7
+  width: 8
   height: 10
+  offSet: 20
   tilePrefab: {fileID: 2761758117196765495, guid: 0e9101a7f6b7dce43ab2d4116a1d0b33, type: 3}
+  currentState: 1
   gems:
   - {fileID: 7723953940152371509, guid: 22c7b9e9a031fc44c8946d23457294df, type: 3}
   - {fileID: 7039433022605411441, guid: a2b3a125491813f44a331b3961a0b509, type: 3}
-  - {fileID: 592770590000915735, guid: a349077e2a5904b499dcc17f09562ffb, type: 3}
   - {fileID: 5711065410757983515, guid: 76a38599cf09a79498eedce48d13958d, type: 3}
-  - {fileID: 2640981880212257475, guid: c06c730c11d73ba47bc15db073b2ba88, type: 3}
   - {fileID: 7607476920341614979, guid: f892d050976bbfa48bbde17b20eb8b99, type: 3}
   - {fileID: 8406658514140243950, guid: 8dae7df1d031c0146941276fc6dd962f, type: 3}
   - {fileID: 5376381368632264947, guid: a59dd1c8a2a1ed44b810e5665adfe199, type: 3}
+  currentMatches: []
+  currentGem: {fileID: 0}
 --- !u!4 &598686026
 Transform:
   m_ObjectHideFlags: 0
@@ -518,4 +520,48 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1907842738
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1907842740}
+  - component: {fileID: 1907842739}
+  m_Layer: 0
+  m_Name: MatchFinder
+  m_TagString: Untagged
+  m_Icon: {fileID: 5132851093641282708, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &1907842739
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1907842738}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3de54046020b81d4fa78c94fab38602c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentMatches: []
+--- !u!4 &1907842740
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1907842738}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

@@ -1,21 +1,36 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
+
+public enum GameState
+{
+    WAIT,
+    MOVE
+}
 
 public class BoardGenerator : MonoBehaviour
 {
     public int width;
     public int height;
+    public int offSet;
     public GameObject tilePrefab;
 
+    public GameState currentState;
+
     public GameObject[] gems;
-    private TileScript[,] allTiles;
+    //private TileScript[,] allTiles;
     public GameObject[,] board;
+    private FindMatches findMatches;
+
+    public List<GameObject> currentMatchesList = new List<GameObject>();
+    public GemBehaviour currentGem;
 
     // Start is called before the first frame update
     void Start()
     {
-        allTiles = new TileScript[width, height];
+        findMatches = FindObjectOfType<FindMatches>();
+        //allTiles = new TileScript[width, height];
         board = new GameObject[width, height];
 
         GenerateBoard();
@@ -33,7 +48,7 @@ public class BoardGenerator : MonoBehaviour
         {
             for(int j = 0; j < height; j ++)
             {
-                Vector3 tempPos = new Vector3(i, j, 0);
+                Vector3 tempPos = new Vector3(i, j + offSet, 0);
                 GameObject testTile =  Instantiate(tilePrefab, tempPos, Quaternion.identity) as GameObject;
 
                 testTile.transform.parent = this.transform;
@@ -51,6 +66,9 @@ public class BoardGenerator : MonoBehaviour
                 maxLoopTime = 0;
                 
                 GameObject tempGem = Instantiate(gems[currentGem], tempPos, Quaternion.identity);
+                tempGem.GetComponent<GemBehaviour>().row = j;
+                tempGem.GetComponent<GemBehaviour>().column = i;
+
                 tempGem.transform.parent = this.transform;
                 tempGem.name = "( " + i + "," + j + " )";
                 board[i, j] = tempGem;
@@ -96,6 +114,13 @@ public class BoardGenerator : MonoBehaviour
     {
         if(board[column,row].GetComponent<GemBehaviour>().isMatched)
         {
+            
+            if(currentMatchesList.Count == 4 || currentMatchesList.Count == 7)
+            {
+                CheckToSetSpecialGem();
+            }
+
+            //currentMatches.Remove(board[column, row]);
             Destroy(board[column, row]);
             board[column, row] = null;
         }
@@ -114,10 +139,11 @@ public class BoardGenerator : MonoBehaviour
             }
         }
 
-        StartCoroutine(DecreaseRow());
+        currentMatchesList.Clear();
+        StartCoroutine(ReconstructBoard());
     }
 
-    private IEnumerator DecreaseRow()
+    private IEnumerator ReconstructBoard()
     {
         int nullCount = 0;
         for (int i = 0; i < width; i++)
@@ -139,7 +165,7 @@ public class BoardGenerator : MonoBehaviour
 
         yield return new WaitForSeconds(0.5f);
 
-        StartCoroutine(FillBoard());
+        StartCoroutine(FillAndCheckBoard());
     }
 
     private void RefillBoard()
@@ -150,10 +176,12 @@ public class BoardGenerator : MonoBehaviour
             {
                 if(board[i,j] == null)
                 {
-                    Vector3 temPos = new Vector3(i, j, 0);
+                    Vector3 temPos = new Vector3(i, j + offSet, 0);
                     int currentGem = Random.Range(0, gems.Length);
                     GameObject temp = Instantiate(gems[currentGem], temPos, Quaternion.identity);
                     board[i, j] = temp;
+                    temp.GetComponent<GemBehaviour>().row = j;
+                    temp.GetComponent<GemBehaviour>().column = i;
                 }
             }
         }
@@ -178,14 +206,227 @@ public class BoardGenerator : MonoBehaviour
         return false;
     }
 
-    private IEnumerator FillBoard()
+    private IEnumerator FillAndCheckBoard()
     {
         RefillBoard();
-        yield return new WaitForSeconds(0.5f);
+
+        yield return new WaitForSeconds(0.4f);
+
         while(MatchesOnBoard())
         {
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(0.4f);
+
             DestroyAllMatchesGem();
+        }
+
+        currentMatchesList.Clear();
+        currentGem = null;
+
+        yield return new WaitForSeconds(0.4f);
+
+        currentState = GameState.MOVE;
+    }
+
+
+    private List<GameObject> CheckMatchedGemsInColumn(GemBehaviour gem1, GemBehaviour gem2, GemBehaviour gem3)
+    {
+        List<GameObject> currentGems = new List<GameObject>();
+
+        if (gem1.isColumnClearGem)
+        {
+            currentMatchesList.Union(MatchedGemsInColumn(gem1.column));
+        }
+        if (gem2.isColumnClearGem)
+        {
+            currentMatchesList.Union(MatchedGemsInColumn(gem2.column));
+        }
+        if (gem3.isColumnClearGem)
+        {
+            currentMatchesList.Union(MatchedGemsInColumn(gem3.column));
+        }
+
+        return currentGems;
+    }
+
+    private List<GameObject> CheckMatchedGemsInRow(GemBehaviour gem1, GemBehaviour gem2, GemBehaviour gem3)
+    {
+        List<GameObject> currentGems = new List<GameObject>();
+
+        if (gem1.isRowClearGem)
+        {
+            currentMatchesList.Union(MatchedGemsInRow(gem1.row));
+        }
+
+        if (gem2.isRowClearGem)
+        {
+            currentMatchesList.Union(MatchedGemsInRow(gem2.row));
+        }
+
+        if (gem3.isRowClearGem)
+        {
+            currentMatchesList.Union(MatchedGemsInRow(gem3.row));
+        }
+
+        return currentGems;
+    }
+
+    private void  AddAndMatchGem(GameObject gem)
+    {
+        if (!currentMatchesList.Contains(gem))
+        {
+            currentMatchesList.Add(gem);
+        }
+        gem.GetComponent<GemBehaviour>().isMatched = true;
+    }
+
+
+    private void AddAndMatchNearbyGemsToList(GameObject gem1, GameObject gem2, GameObject gem3)
+    {
+        AddAndMatchGem(gem1);
+        AddAndMatchGem(gem2);
+        AddAndMatchGem(gem3);
+    }
+
+
+    public IEnumerator FindAllMatches()
+    {
+        yield return new WaitForSeconds(0.2f);
+
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                GameObject currentGem = board[i, j];
+                
+
+                if (currentGem != null)
+                {
+                    // Checking matches for left and right
+                    if (i > 0 && i < width - 1)
+                    {
+                        ProcessNearbyGems(board[i - 1, j], currentGem, board[i + 1, j]);
+                    }
+
+                    // Checking matches for up and down
+                    if (j > 0 && j < height - 1)
+                    {
+                        ProcessNearbyGems(board[i, j + 1], currentGem, board[i, j - 1]);
+                    }
+                }
+            }
+        }
+    }
+
+
+
+    private void ProcessNearbyGems(GameObject gem1, GameObject gem2, GameObject gem3)
+    {
+        if (gem1 != null && gem3 != null)
+        {
+            
+            GemBehaviour gem1Behaviour = gem1.GetComponent<GemBehaviour>();
+            GemBehaviour gem2GemBehaviour = gem2.GetComponent<GemBehaviour>();
+            GemBehaviour gem3GemBehaviour = gem3.GetComponent<GemBehaviour>();
+
+            if (gem1.tag == gem2.tag && gem3.tag == gem2.tag)
+            {
+
+                currentMatchesList.Union(CheckMatchedGemsInRow(gem1Behaviour, gem2GemBehaviour, gem3GemBehaviour));
+
+                currentMatchesList.Union(CheckMatchedGemsInColumn(gem1Behaviour, gem2GemBehaviour, gem3GemBehaviour));
+
+                AddAndMatchNearbyGemsToList(gem1, gem2, gem3);
+            }
+        }
+    }
+
+
+
+    public void MatchedGemsOfColor(string color)
+    {
+        for(int i = 0; i < width; i ++)
+        {
+            for(int j = 0; j < height; j ++)
+            {
+                if(board[i,j] != null)
+                {
+                    if(board[i,j].tag == color)
+                    {
+                        board[i, j].GetComponent<GemBehaviour>().isMatched = true;
+                    }
+                }
+            }
+        }
+    }
+
+
+    List<GameObject> MatchedGemsInColumn(int column)
+    {
+        List<GameObject> gems = new List<GameObject>();
+
+        for (int i = 0; i < height; i++)
+        {
+            if (board[column, i] != null)
+            {
+                gems.Add(board[column, i]);
+                board[column, i].GetComponent<GemBehaviour>().isMatched = true;
+                }
+        }
+
+        return gems;
+    }
+
+    List<GameObject> MatchedGemsInRow(int row)
+    {
+        List<GameObject> gems = new List<GameObject>();
+
+        for (int i = 0; i < width; i++)
+        {
+            if (board[i, row] != null)
+            {
+                gems.Add(board[i, row]);
+                board[i, row].GetComponent<GemBehaviour>().isMatched = true;
+            }
+        }
+
+        return gems;
+    }
+
+    public void CheckToSetSpecialGem()
+    {
+        if(currentGem != null)
+        {
+            if(currentGem.isMatched)
+            {
+                SetSpecialClearRowOrColumnGem(currentGem);
+            }
+            else if(currentGem.nextGem != null)
+            {
+                GemBehaviour nextGem = currentGem.nextGem.GetComponent<GemBehaviour>();
+
+                if(nextGem.isMatched)
+                {
+                    SetSpecialClearRowOrColumnGem(nextGem);
+                }
+
+                
+  
+            }
+        }
+    }
+
+
+    private void SetSpecialClearRowOrColumnGem(GemBehaviour gem)
+    {
+        gem.isMatched = false;
+
+        if ((currentGem.changedAngle > -45.0f && currentGem.changedAngle <= 45.0f) || (currentGem.changedAngle <= -135.0f || currentGem.changedAngle > 135.0f))
+        {
+            gem.CreateRowClearGem();
+        }
+        else
+        {
+            gem.CreateColumnClearGem();
         }
     }
 }

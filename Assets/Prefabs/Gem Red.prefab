@@ -27,7 +27,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8406658514140243950}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.24, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -73,7 +73,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: b4690870fcb51a6438c8586ca0d54f0b, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 17303ed6ce0d3d94bb3a5a6309fc3555, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -114,6 +114,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   column: 0
   row: 0
+  previousColumn: 0
+  previousRow: 0
   targetPosX: 0
   targetPosY: 0
+  nextGem: {fileID: 0}
   changedAngle: 0
+  changedThreshold: 0.8
+  isMatched: 0
+  isColorClearGem: 0
+  isColumnClearGem: 0
+  isRowClearGem: 0
+  columnClearGem: {fileID: 4276775293567481803, guid: 06b7ecd880edb6a4eaed0d69999a6056, type: 3}
+  rowclearGem: {fileID: 5745488859741840719, guid: d7b9c23af78baf24782c1e1b454d44a1, type: 3}
+  colorClearGem: {fileID: 5025522396831955092, guid: f22e11682746a804e90c2c752ed18651, type: 3}

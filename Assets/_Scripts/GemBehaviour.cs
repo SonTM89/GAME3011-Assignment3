@@ -13,40 +13,63 @@ public class GemBehaviour : MonoBehaviour
     public int targetPosX;
     public int targetPosY;
 
-    private BoardGenerator boardGenerator;
-    private GameObject nextGem;
+    private BoardGenerator miniGame;
+    public GameObject nextGem;
 
     private Vector3 firstPos;
     private Vector3 finalPos;
+
+    private FindMatches findMatches;
 
     public float changedAngle = 0;
     public float changedThreshold = 0.8f;
     public bool isMatched = false;
 
+    [Header("Powerup")]
+    public bool isColorClearGem;
+    public bool isColumnClearGem;
+    public bool isRowClearGem;
+
+    public GameObject columnClearGem;
+    public GameObject rowclearGem;
+    public GameObject colorClearGem;
+
     // Start is called before the first frame update
     void Start()
     {
-        boardGenerator = FindObjectOfType<BoardGenerator>();
+        isColumnClearGem = false;
+        isRowClearGem = false;
 
-        targetPosX = (int)transform.position.x;
-        targetPosY = (int)transform.position.y;
+        miniGame = FindObjectOfType<BoardGenerator>();
+        findMatches = FindObjectOfType<FindMatches>();
 
-        row = targetPosY;
-        column = targetPosX;
+        //targetPosX = (int)transform.position.x;
+        //targetPosY = (int)transform.position.y;
 
-        previousRow = row;
-        previousColumn = column;
+        //row = targetPosY;
+        //column = targetPosX;
+
+        //previousRow = row;
+       // previousColumn = column;
     }
 
     // Update is called once per frame
     void Update()
     {
-        FindMatches();
+        //FindMatches();
 
         if(isMatched)
         {
             SpriteRenderer sRenderer = GetComponent<SpriteRenderer>();
             sRenderer.color = new Color(1.0f, 1.0f, 1.0f, 0.2f);
+            transform.localScale = Vector3.Lerp(transform.localScale, new Vector3(1.3f, 1.3f, 1.3f), 0.025f);
+        }
+
+        if(isColumnClearGem || isRowClearGem)
+        {
+            SpriteRenderer sRenderer = GetComponent<SpriteRenderer>();
+            sRenderer.color = new Color(1.0f, 1.0f, 1.0f, 1.0f);
+            transform.localScale = Vector3.Lerp(transform.localScale, new Vector3(1.0f, 1.0f, 1.0f), 0.025f);
         }
 
         GemMoving();
@@ -63,16 +86,19 @@ public class GemBehaviour : MonoBehaviour
         {
             tempPos = new Vector3(targetPosX, transform.position.y, 0);
             transform.position = Vector3.Lerp(transform.position, tempPos, 0.3f);
-            if(boardGenerator.board[column, row] != this.gameObject)
+            if(miniGame.board[column, row] != this.gameObject)
             {
-                boardGenerator.board[column, row] = this.gameObject;
+                miniGame.board[column, row] = this.gameObject;
             }
+
+            //findMatches.StartFinding();
+            StartCoroutine(miniGame.FindAllMatches());
         }
         else
         {
             tempPos = new Vector3(targetPosX, transform.position.y, 0);
             transform.position = tempPos;
-            boardGenerator.board[column, row] = this.gameObject;
+            miniGame.board[column, row] = this.gameObject;
         }
 
         // Moving left and right
@@ -80,35 +106,57 @@ public class GemBehaviour : MonoBehaviour
         {
             tempPos = new Vector3(transform.position.x, targetPosY, 0);
             transform.position = Vector3.Lerp(transform.position, tempPos, 0.3f);
-            if (boardGenerator.board[column, row] != this.gameObject)
+            if (miniGame.board[column, row] != this.gameObject)
             {
-                boardGenerator.board[column, row] = this.gameObject;
+                miniGame.board[column, row] = this.gameObject;
             }
+
+            //findMatches.StartFinding();
+            StartCoroutine(miniGame.FindAllMatches());
         }
         else
         {
             tempPos = new Vector3(transform.position.x, targetPosY, 0);
             transform.position = tempPos;
-            boardGenerator.board[column, row] = this.gameObject;
+            miniGame.board[column, row] = this.gameObject;
         }
     }
 
-    
+
+
+    private void OnMouseOver()
+    {
+        if(Input.GetMouseButtonDown(1))
+        {
+            isColorClearGem = true;
+            GameObject clearGem = Instantiate(colorClearGem, transform.position, Quaternion.identity);
+            clearGem.transform.parent = this.transform;
+        }
+    }
+
+
     private void OnMouseDown()
     {
-        Vector3 tempPos = Input.mousePosition;
-        firstPos = new Vector3(Camera.main.ScreenToWorldPoint(tempPos).x, Camera.main.ScreenToWorldPoint(tempPos).y, 0);
-        //Debug.Log(tempPos);
+        if(miniGame.currentState == GameState.MOVE)
+        {
+            Vector3 tempPos = Input.mousePosition;
+            firstPos = new Vector3(Camera.main.ScreenToWorldPoint(tempPos).x, Camera.main.ScreenToWorldPoint(tempPos).y, 0);
+            //Debug.Log(tempPos);
+        }
     }
 
    
     private void OnMouseUp()
     {
-        Vector3 tempPos = Input.mousePosition;
-        finalPos = new Vector3(Camera.main.ScreenToWorldPoint(tempPos).x, Camera.main.ScreenToWorldPoint(tempPos).y, 0);
-        //Debug.Log(finalPos);
+        if (miniGame.currentState == GameState.MOVE)
+        {
+            Vector3 tempPos = Input.mousePosition;
+            finalPos = new Vector3(Camera.main.ScreenToWorldPoint(tempPos).x, Camera.main.ScreenToWorldPoint(tempPos).y, 0);
+            //Debug.Log(finalPos);
 
-        CalculateChangedPos();
+            CalculateChangedPos();
+        }
+        
     }
 
    
@@ -120,8 +168,15 @@ public class GemBehaviour : MonoBehaviour
             //Debug.Log(changedAngle);
 
             GemChangingPosition();
-        }
 
+            miniGame.currentState = GameState.WAIT;
+
+            miniGame.currentGem = this;
+        }
+        else
+        {
+            miniGame.currentState = GameState.MOVE;           
+        }
         
     }
 
@@ -129,30 +184,38 @@ public class GemBehaviour : MonoBehaviour
     private void GemChangingPosition()
     {
         // Right side
-        if(changedAngle > -45.0f && changedAngle <= 45.0f && column < boardGenerator.width - 1)
+        if(changedAngle > -45.0f && changedAngle <= 45.0f && column < miniGame.width - 1)
         {
-            nextGem = boardGenerator.board[column + 1, row];
+            nextGem = miniGame.board[column + 1, row];
+            previousRow = row;
+            previousColumn = column;
             nextGem.GetComponent<GemBehaviour>().column -= 1;
             column += 1;
         } 
         // Up side
-        else if (changedAngle > 45.0f && changedAngle <= 135.0f && row < boardGenerator.height - 1)
+        else if (changedAngle > 45.0f && changedAngle <= 135.0f && row < miniGame.height - 1)
         {
-            nextGem = boardGenerator.board[column, row + 1];
+            nextGem = miniGame.board[column, row + 1];
+            previousRow = row;
+            previousColumn = column;
             nextGem.GetComponent<GemBehaviour>().row -= 1;
             row += 1;
         } 
         // Left side
         else if ((changedAngle > 135.0f || changedAngle <= -135.0f) && column > 0)
         {
-            nextGem = boardGenerator.board[column - 1, row];
+            nextGem = miniGame.board[column - 1, row];
+            previousRow = row;
+            previousColumn = column;
             nextGem.GetComponent<GemBehaviour>().column += 1;
             column -= 1;
         }
         // Down side
         else if (changedAngle > -135.0f && changedAngle <= -45.0f && row > 0)
         {
-            nextGem = boardGenerator.board[column, row - 1];
+            nextGem = miniGame.board[column, row - 1];
+            previousRow = row;
+            previousColumn = column;
             nextGem.GetComponent<GemBehaviour>().row += 1;
             row -= 1;
         }
@@ -163,6 +226,17 @@ public class GemBehaviour : MonoBehaviour
 
     public IEnumerator CheckChanging()
     {
+        if(isColorClearGem)
+        {
+            miniGame.MatchedGemsOfColor(nextGem.tag);
+            isMatched = true;
+        }
+        else if(nextGem.GetComponent<GemBehaviour>().isColumnClearGem)
+        {
+            miniGame.MatchedGemsOfColor(this.gameObject.tag);
+            nextGem.GetComponent<GemBehaviour>().isMatched = true;
+        }
+
         yield return new WaitForSeconds(0.4f);
         if(nextGem != null)
         {
@@ -172,10 +246,14 @@ public class GemBehaviour : MonoBehaviour
                 nextGem.GetComponent<GemBehaviour>().column = column;
                 row = previousRow;
                 column = previousColumn;
+                yield return new WaitForSeconds(0.5f);
+                miniGame.currentGem = null;
+                miniGame.currentState = GameState.MOVE;
             }
             else
             {
-                boardGenerator.DestroyAllMatchesGem();
+                miniGame.DestroyAllMatchesGem();
+                
             }
 
             nextGem = null;
@@ -185,10 +263,10 @@ public class GemBehaviour : MonoBehaviour
 
     private void FindMatches()
     {
-        if(column > 0 && column < boardGenerator.width - 1)
+        if(column > 0 && column < miniGame.width - 1)
         {
-            GameObject leftGem1 = boardGenerator.board[column - 1, row];
-            GameObject rightGem1 = boardGenerator.board[column + 1, row];
+            GameObject leftGem1 = miniGame.board[column - 1, row];
+            GameObject rightGem1 = miniGame.board[column + 1, row];
             if(leftGem1 != null && rightGem1 != null)
             {
                 if (leftGem1.tag == this.gameObject.tag && rightGem1.tag == this.gameObject.tag)
@@ -200,10 +278,10 @@ public class GemBehaviour : MonoBehaviour
             }
         }
 
-        if (row > 0 && row < boardGenerator.height - 1)
+        if (row > 0 && row < miniGame.height - 1)
         {
-            GameObject downGem1 = boardGenerator.board[column, row - 1];
-            GameObject upGem1 = boardGenerator.board[column, row + 1];
+            GameObject downGem1 = miniGame.board[column, row - 1];
+            GameObject upGem1 = miniGame.board[column, row + 1];
 
             if (downGem1 != null && upGem1 != null)
             {
@@ -216,5 +294,20 @@ public class GemBehaviour : MonoBehaviour
             }
             
         }
+    }
+
+    public void CreateRowClearGem()
+    {
+        isRowClearGem = true;
+        GameObject tempGem = Instantiate(rowclearGem, transform.position, Quaternion.identity);
+        tempGem.transform.parent = this.transform;
+    }
+
+
+    public void CreateColumnClearGem()
+    {
+        isColumnClearGem = true;
+        GameObject tempGem = Instantiate(columnClearGem, transform.position, Quaternion.identity);
+        tempGem.transform.parent = this.transform;
     }
 }
