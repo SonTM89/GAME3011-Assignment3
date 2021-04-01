@@ -62,7 +62,11 @@ public class GemBehaviour : MonoBehaviour
         if (Mathf.Abs(targetPosX - transform.position.x) > 0.1f)
         {
             tempPos = new Vector3(targetPosX, transform.position.y, 0);
-            transform.position = Vector3.Lerp(transform.position, tempPos, 0.1f);
+            transform.position = Vector3.Lerp(transform.position, tempPos, 0.3f);
+            if(boardGenerator.board[column, row] != this.gameObject)
+            {
+                boardGenerator.board[column, row] = this.gameObject;
+            }
         }
         else
         {
@@ -75,7 +79,11 @@ public class GemBehaviour : MonoBehaviour
         if (Mathf.Abs(targetPosY - transform.position.y) > 0.1f)
         {
             tempPos = new Vector3(transform.position.x, targetPosY, 0);
-            transform.position = Vector3.Lerp(transform.position, tempPos, 0.1f);
+            transform.position = Vector3.Lerp(transform.position, tempPos, 0.3f);
+            if (boardGenerator.board[column, row] != this.gameObject)
+            {
+                boardGenerator.board[column, row] = this.gameObject;
+            }
         }
         else
         {

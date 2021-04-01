@@ -113,5 +113,79 @@ public class BoardGenerator : MonoBehaviour
                 }
             }
         }
+
+        StartCoroutine(DecreaseRow());
+    }
+
+    private IEnumerator DecreaseRow()
+    {
+        int nullCount = 0;
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                if(board[i,j] == null)
+                {
+                    nullCount++;
+                }
+                else if(nullCount > 0)
+                {
+                    board[i,j].GetComponent<GemBehaviour>().row -= nullCount;
+                    board[i,j] = null; 
+                }
+            }
+            nullCount = 0;
+        }
+
+        yield return new WaitForSeconds(0.5f);
+
+        StartCoroutine(FillBoard());
+    }
+
+    private void RefillBoard()
+    {
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                if(board[i,j] == null)
+                {
+                    Vector3 temPos = new Vector3(i, j, 0);
+                    int currentGem = Random.Range(0, gems.Length);
+                    GameObject temp = Instantiate(gems[currentGem], temPos, Quaternion.identity);
+                    board[i, j] = temp;
+                }
+            }
+        }
+    }
+
+    private bool MatchesOnBoard()
+    {
+        for (int i = 0; i < width; i++)
+        {
+            for (int j = 0; j < height; j++)
+            {
+                if(board[i,j] != null)
+                {
+                    if(board[i,j].GetComponent<GemBehaviour>().isMatched)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private IEnumerator FillBoard()
+    {
+        RefillBoard();
+        yield return new WaitForSeconds(0.5f);
+        while(MatchesOnBoard())
+        {
+            yield return new WaitForSeconds(0.5f);
+            DestroyAllMatchesGem();
+        }
     }
 }
