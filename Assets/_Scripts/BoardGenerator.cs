@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using UnityEngine.SceneManagement;
+using TMPro;
 
 public enum GameState
 {
@@ -27,6 +29,22 @@ public class SingleTile
 
 public class BoardGenerator : MonoBehaviour
 {
+    public Difficulty gameDifficulty;
+
+    public Level gameLevel;
+
+
+    public float timeRemaining;
+
+    public TextMeshProUGUI minuteText;
+    public TextMeshProUGUI secondText;
+    [SerializeField] private GameObject winText;
+    [SerializeField] private GameObject gameOverText;
+
+    private bool win;
+    private bool gameOver;
+
+
     public int width;
     public int height;
     public int offSet;
@@ -41,7 +59,6 @@ public class BoardGenerator : MonoBehaviour
     [SerializeField] public bool[,] immovableboard;
     
     public GameObject[,] board;
-    private FindMatches findMatches;
 
     public List<GameObject> currentMatchesList = new List<GameObject>();
     public GemBehaviour currentGem;
@@ -49,10 +66,19 @@ public class BoardGenerator : MonoBehaviour
     public float aspectRatio = 1.1f;
     public float padding = 2;
 
+
     // Start is called before the first frame update
     void Start()
     {
-        findMatches = FindObjectOfType<FindMatches>();
+        win = false;
+        gameOver = false;
+
+        gameDifficulty = InputValue.gameDifficulty;
+
+        gameLevel = InputValue.gameLevel;
+
+        SettingDifficulty();
+
         immovableboard = new bool[width, height];
         board = new GameObject[width, height];
         SetUpCamera(width, height);
@@ -60,11 +86,74 @@ public class BoardGenerator : MonoBehaviour
         GenerateBoard();
     }
 
+
     // Update is called once per frame
     void Update()
     {
-        
+        if (gameOver == false)
+        {
+            TimeCounter();
+        }
+        else
+        {
+            if (win)
+            {
+                winText.gameObject.SetActive(true);
+                StartCoroutine(ShowMessage(2.0f));
+            }
+            else
+            {
+                gameOverText.gameObject.SetActive(true);
+                StartCoroutine(ShowMessage(2.0f));
+            }
+        }
     }
+
+
+    // Show Message after finishing Game and change to Start scene
+    IEnumerator ShowMessage(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        SceneManager.LoadScene("Start");
+    }
+
+
+    // Setting Difficulty up to Input value
+    private void SettingDifficulty()
+    {
+        if (gameDifficulty == Difficulty.EASY)
+        {
+            timeRemaining = 60.0f;
+        }
+        else if (gameDifficulty == Difficulty.MEDIUM)
+        {
+            timeRemaining = 90.0f;
+        }
+        else if (gameDifficulty == Difficulty.HARD)
+        {
+            timeRemaining = 120.0f;
+        }
+    }
+
+    // Count down the time to set the game over state
+    private void TimeCounter()
+    {
+        if (timeRemaining > 0)
+        {
+            timeRemaining -= Time.deltaTime;
+
+            int minute = (int)(timeRemaining) / 60;
+            int second = (int)timeRemaining - (60 * minute);
+
+            minuteText.text = (minute > 9) ? minute.ToString() : "0" + minute.ToString();
+            secondText.text = (second > 9) ? second.ToString() : "0" + second.ToString();
+        }
+        else
+        {
+            gameOver = true;
+        }
+    }
+
 
     public void GenerateImmovableTile()
     {

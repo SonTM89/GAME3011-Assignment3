@@ -28,8 +28,6 @@ public class GemBehaviour : MonoBehaviour
     private Vector3 firstPos;
     private Vector3 finalPos;
 
-    private FindMatches findMatches;
-
     public float changedAngle = 0;
     public float changedThreshold = 0.8f;
     public bool isMatched = false;
@@ -54,7 +52,6 @@ public class GemBehaviour : MonoBehaviour
         isSquareClearGem = false;
 
         miniGame = FindObjectOfType<BoardGenerator>();
-        findMatches = FindObjectOfType<FindMatches>();
 
         //targetPosX = (int)transform.position.x;
         //targetPosY = (int)transform.position.y;
