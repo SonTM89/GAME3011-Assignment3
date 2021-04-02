@@ -139,8 +139,8 @@ public class GemBehaviour : MonoBehaviour
     {
         if(Input.GetMouseButtonDown(1))
         {
-            isSquareClearGem = true;
-            GameObject clearGem = Instantiate(squareClearGem, transform.position, Quaternion.identity);
+            isColorClearGem = true;
+            GameObject clearGem = Instantiate(colorClearGem, transform.position, Quaternion.identity);
             clearGem.transform.parent = this.transform;
         }
     }
@@ -217,49 +217,22 @@ public class GemBehaviour : MonoBehaviour
         // Right side
         if(changedAngle > -45.0f && changedAngle <= 45.0f && column < miniGame.width - 1)
         {
-            //nextGem = miniGame.board[column + 1, row];
-            //previousRow = row;
-            //previousColumn = column;
-            //nextGem.GetComponent<GemBehaviour>().column -= 1;
-            //column += 1;
-            //StartCoroutine(CheckChanging());
 
             GemChangingPosition(Vector2.right);
         } 
         // Up side
         else if (changedAngle > 45.0f && changedAngle <= 135.0f && row < miniGame.height - 1)
         {
-            //nextGem = miniGame.board[column, row + 1];
-            //previousRow = row;
-            //previousColumn = column;
-            //nextGem.GetComponent<GemBehaviour>().row -= 1;
-            //row += 1;
-            //StartCoroutine(CheckChanging());
-
             GemChangingPosition(Vector2.up);
         } 
         // Left side
         else if ((changedAngle > 135.0f || changedAngle <= -135.0f) && column > 0)
         {
-            //nextGem = miniGame.board[column - 1, row];
-            //previousRow = row;
-            //previousColumn = column;
-            //nextGem.GetComponent<GemBehaviour>().column += 1;
-            //column -= 1;
-            //StartCoroutine(CheckChanging());
-
             GemChangingPosition(Vector2.left);
         }
         // Down side
         else if (changedAngle > -135.0f && changedAngle <= -45.0f && row > 0)
         {
-            //nextGem = miniGame.board[column, row - 1];
-            //previousRow = row;
-            //previousColumn = column;
-            //nextGem.GetComponent<GemBehaviour>().row += 1;
-            //row -= 1;
-            //StartCoroutine(CheckChanging());
-
             GemChangingPosition(Vector2.down);
         }
 
@@ -342,35 +315,6 @@ public class GemBehaviour : MonoBehaviour
     }
 
 
-    //public void CreateRowClearGem()
-    //{
-    //    isRowClearGem = true;
-    //    GameObject tempGem = Instantiate(rowclearGem, transform.position, Quaternion.identity);
-    //    tempGem.transform.parent = this.transform;
-    //}
-
-
-    //public void CreateColumnClearGem()
-    //{
-    //    isColumnClearGem = true;
-    //    GameObject tempGem = Instantiate(columnClearGem, transform.position, Quaternion.identity);
-    //    tempGem.transform.parent = this.transform;
-    //}
-
-    //public void CreateColorClearGem()
-    //{
-    //    isColorClearGem = true;
-    //    GameObject tempGem = Instantiate(colorClearGem, transform.position, Quaternion.identity);
-    //    tempGem.transform.parent = this.transform;
-    //}
-
-    //public void CreateSquareClearGem()
-    //{
-    //    isSquareClearGem = true;
-    //    GameObject tempGem = Instantiate(squareClearGem, transform.position, Quaternion.identity);
-    //    tempGem.transform.parent = this.transform;
-    //}
-
 
     public void CreateSpecialGem(SpecialGem type)
     {
@@ -392,6 +336,7 @@ public class GemBehaviour : MonoBehaviour
                 isColorClearGem = true;
                 tempGem = Instantiate(colorClearGem, transform.position, Quaternion.identity);
                 tempGem.transform.parent = this.transform;
+                //this.gameObject.tag = "Color";
                 break;
             case SpecialGem.SQUARE_CLEAR:
                 isSquareClearGem = true;

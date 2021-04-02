@@ -25,6 +25,13 @@ public class SingleTile
     public int x;
     public int y;
     public TileType tiletype;
+
+    public SingleTile(int _x, int _y, TileType _type)
+    {
+        x = _x;
+        y = _y;
+        tiletype = _type;
+    }
 }
 
 public class BoardGenerator : MonoBehaviour
@@ -33,11 +40,24 @@ public class BoardGenerator : MonoBehaviour
 
     public Level gameLevel;
 
-
+    [Header("Timer")]
     public float timeRemaining;
-
     public TextMeshProUGUI minuteText;
     public TextMeshProUGUI secondText;
+
+    [Header("Score")]
+    public int score;
+    public int winScore;
+    public TextMeshProUGUI scoreText;
+    public TextMeshProUGUI winScoreText;
+    //public int move;
+    //public TextMeshProUGUI moveText;
+    //public TextMeshProUGUI winMoveText;
+    public int gemScore = 10;
+    private int streak = 1;
+
+    public float refillDelay = 0.5f;
+
     [SerializeField] private GameObject winText;
     [SerializeField] private GameObject gameOverText;
 
@@ -55,6 +75,7 @@ public class BoardGenerator : MonoBehaviour
     public GameObject[] gemTypes;
 
     public SingleTile[] tilePositionList;
+    public List<SingleTile> immovableTilelist;
     
     [SerializeField] public bool[,] immovableboard;
     
@@ -66,12 +87,19 @@ public class BoardGenerator : MonoBehaviour
     public float aspectRatio = 1.1f;
     public float padding = 2;
 
+    public AudioSource matchingSound;
+
 
     // Start is called before the first frame update
     void Start()
     {
         win = false;
         gameOver = false;
+
+        score = 0;
+        //move = 0;
+
+        immovableTilelist = new List<SingleTile>();
 
         gameDifficulty = InputValue.gameDifficulty;
 
@@ -81,6 +109,7 @@ public class BoardGenerator : MonoBehaviour
 
         immovableboard = new bool[width, height];
         board = new GameObject[width, height];
+        
         SetUpCamera(width, height);
 
         GenerateBoard();
@@ -90,9 +119,20 @@ public class BoardGenerator : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        scoreText.text = score.ToString();
+        //moveText.text = move.ToString();
+        winScoreText.text = winScore.ToString();
+
+
         if (gameOver == false)
         {
             TimeCounter();
+
+            if(score >= winScore)
+            {
+                win = true;
+                gameOver = true;
+            }
         }
         else
         {
@@ -114,7 +154,7 @@ public class BoardGenerator : MonoBehaviour
     IEnumerator ShowMessage(float delay)
     {
         yield return new WaitForSeconds(delay);
-        SceneManager.LoadScene("Start");
+        SceneManager.LoadScene("StartScene");
     }
 
 
@@ -124,16 +164,50 @@ public class BoardGenerator : MonoBehaviour
         if (gameDifficulty == Difficulty.EASY)
         {
             timeRemaining = 60.0f;
+            winScore = 1000;
         }
         else if (gameDifficulty == Difficulty.MEDIUM)
         {
             timeRemaining = 90.0f;
+            winScore = 1750;
         }
         else if (gameDifficulty == Difficulty.HARD)
         {
             timeRemaining = 120.0f;
+            winScore = 2500;
+        }
+        else
+        {
+            timeRemaining = 600.0f;
+            winScore = 50;
         }
     }
+
+
+    public int GemTypesToUse()
+    {
+        int numGemTypes = 0;
+
+        switch(gameDifficulty)
+        {
+            case Difficulty.HARD:
+                numGemTypes = gemTypes.Length;
+                break;
+            case Difficulty.MEDIUM:
+                numGemTypes = gemTypes.Length - 1;
+                break;
+            case Difficulty.EASY:
+                numGemTypes = gemTypes.Length - 2;
+                break;
+            default:
+                numGemTypes = gemTypes.Length - 3;
+                break;
+        }
+
+        return numGemTypes;
+    }
+
+
 
     // Count down the time to set the game over state
     private void TimeCounter()
@@ -155,14 +229,76 @@ public class BoardGenerator : MonoBehaviour
     }
 
 
+
+    private void RandomizeImmovablePos()
+    {
+        int x = UnityEngine.Random.Range(0, width);
+        int y = UnityEngine.Random.Range(2, height);
+
+        if (immovableTilelist.Count > 0)
+        {
+            bool placeable = true;
+
+            for(int i = 0; i < immovableTilelist.Count; i++)
+            {
+
+                if(immovableTilelist[i].x == x && immovableTilelist[i].y == y)
+                {
+                    placeable = false;
+                    break;
+                }
+            }
+
+            if (placeable == true)
+            {
+                immovableTilelist.Add(new SingleTile(x, y, TileType.IMMOVABLE));
+            }
+            else
+            {
+                RandomizeImmovablePos();
+            }
+        }
+        else
+        {
+            immovableTilelist.Add(new SingleTile(x, y, TileType.IMMOVABLE));
+        }
+    }
+
+
+    private void GenerateTileList()
+    {
+            int immovableTileAmount = 0;
+
+            if (gameLevel != Level.NONE)
+            {
+                immovableTileAmount = ((int)gameLevel - 1) * 4;
+            }
+        
+        //tilePositionList = new SingleTile[immovableTileAmount];
+
+        for (int i = 0; i < immovableTileAmount; i++)
+        {
+            RandomizeImmovablePos();
+        }
+
+    }
+
+
     public void GenerateImmovableTile()
     {
-        for (int i = 0; i < tilePositionList.Length; i++)
+        GenerateTileList();
+
+        //for (int i = 0; i < tilePositionList.Length; i++)
+        //{
+        //    if (tilePositionList[i].tiletype == TileType.IMMOVABLE)
+        //    {
+        //        immovableboard[tilePositionList[i].x, tilePositionList[i].y] = true;
+        //    }
+        //}
+
+        for (int i = 0; i < immovableTilelist.Count; i++)
         {
-            if (tilePositionList[i].tiletype == TileType.IMMOVABLE)
-            {
-                immovableboard[tilePositionList[i].x, tilePositionList[i].y] = true;
-            }
+                immovableboard[immovableTilelist[i].x, immovableTilelist[i].y] = true;
         }
     }
 
@@ -183,12 +319,12 @@ public class BoardGenerator : MonoBehaviour
                     testTile.name = "( " + i + "," + j + " )";
 
 
-                    int currentGem = Random.Range(0, gemTypes.Length);
+                    int currentGem = Random.Range(0, GemTypesToUse());
 
                     int maxLoopTime = 0;
                     while (MatchesAt(i, j, gemTypes[currentGem]) && maxLoopTime < 100)
                     {
-                        currentGem = Random.Range(0, gemTypes.Length);
+                        currentGem = Random.Range(0, GemTypesToUse());
                         maxLoopTime++;
                     }
                     maxLoopTime = 0;
@@ -200,18 +336,18 @@ public class BoardGenerator : MonoBehaviour
                     tempGem.transform.parent = this.transform;
                     tempGem.name = "( " + i + "," + j + " )";
                     board[i, j] = tempGem;
-                } 
-                //else
-                //{
-                //    Vector3 tempPos = new Vector3(i, j + offSet, 0);
-                //    GameObject testTile = Instantiate(tilePrefab, tempPos, Quaternion.identity) as GameObject;
+                }
+                else
+                {
+                    Vector3 tempPos = new Vector3(i, j + offSet, 0);
+                    GameObject testTile = Instantiate(tilePrefab, tempPos, Quaternion.identity) as GameObject;
 
-                //    testTile.transform.parent = this.transform;
-                //    testTile.name = "( " + i + "," + j + " )";
-                //    SpriteRenderer sprRen = testTile.GetComponent<SpriteRenderer>();
-                //    sprRen.enabled = true;
-                //    //testTile.transform.position = new Vector3(i, j, 0);
-                //}
+                    testTile.transform.parent = this.transform;
+                    testTile.name = "( " + i + "," + j + " )";
+                    SpriteRenderer sprRen = testTile.GetComponent<SpriteRenderer>();
+                    sprRen.enabled = true;
+                    testTile.transform.position = new Vector3(i, j, 0);
+                }
             }
         }
     }
@@ -264,7 +400,7 @@ public class BoardGenerator : MonoBehaviour
     }
 
 
-    private bool ColumnOrRow()
+    private bool FiveInColumnOrRow()
     {
         int numberHorizontal = 0;
         int numberVertical = 0;
@@ -291,73 +427,183 @@ public class BoardGenerator : MonoBehaviour
     }
 
 
+    private Vector2 RowAndColumn()
+    {
+        Vector2 rowAndColumn = new Vector2();
+
+        int numberHorizontal = 0;
+        int numberVertical = 0;
+        GemBehaviour firstGem = currentMatchesList[0].GetComponent<GemBehaviour>();
+
+        if (firstGem != null)
+        {
+            foreach (GameObject currentGem in currentMatchesList)
+            {
+                GemBehaviour gem = currentGem.GetComponent<GemBehaviour>();
+
+                if (gem.row == firstGem.row)
+                {
+                    numberHorizontal++;
+                }
+                if (gem.column == firstGem.column)
+                {
+                    numberVertical++;
+                }
+            }
+        }
+
+        rowAndColumn = new Vector2(numberHorizontal, numberVertical);
+
+        return rowAndColumn;
+    }
+
 
     private void CheckToMakeSpecialGem()
     {
-        if (currentMatchesList.Count == 4 || currentMatchesList.Count == 7)
+        if (currentMatchesList.Count == 4)
         {
             CheckToSetSpecialClearRowOrColumnGem();
         }
         if (currentMatchesList.Count == 5 || currentMatchesList.Count == 8)
         {
-            if(ColumnOrRow())
+            if(FiveInColumnOrRow())
             {
-                if(currentGem != null)
+                CheckToSetSpecialClearColorGem();
+            }
+            else
+            {
+                CheckToSetSpecialClearSquareGem();
+            }
+        }
+        else if(currentMatchesList.Count == 6 || currentMatchesList.Count == 7)
+        {
+            if(RowAndColumn().x == 3 && RowAndColumn().y == 3)
+            {
+
+            }
+            else if(RowAndColumn().x == 5 || RowAndColumn().y == 5)
+            {
+                CheckToSetSpecialClearColorGem();
+            }
+            else
+            {
+                CheckToSetSpecialClearSquareGem();
+            }
+
+        }
+    }
+
+
+    public void CheckToSetSpecialClearColorGem()
+    {
+        if (currentGem != null)
+        {
+            if (currentGem.isMatched)
+            {
+                if (!currentGem.isColorClearGem)
                 {
-                    if(currentGem.isMatched)
-                    {
-                        if(!currentGem.isColorClearGem)
-                        {
-                            currentGem.isMatched = false;
-                            currentGem.CreateSpecialGem(SpecialGem.COLOR_CLEAR);
-                        }
-                    }
-                    else
-                    {
-                        if(currentGem.nextGem != null)
-                        {
-                            GemBehaviour nextGemBehaviour = currentGem.nextGem.GetComponent<GemBehaviour>();
-                            if(nextGemBehaviour.isMatched)
-                            {
-                                if(!nextGemBehaviour.isColorClearGem)
-                                {
-                                    nextGemBehaviour.isMatched = false;
-                                    nextGemBehaviour.CreateSpecialGem(SpecialGem.COLOR_CLEAR);
-                                }
-                            }
-                        }
-                    }
+                    currentGem.isMatched = false;
+                    currentGem.CreateSpecialGem(SpecialGem.COLOR_CLEAR);
                 }
             }
             else
             {
-                if (currentGem != null)
+                if (currentGem.nextGem != null)
                 {
-                    if (currentGem.isMatched)
+                    GemBehaviour nextGemBehaviour = currentGem.nextGem.GetComponent<GemBehaviour>();
+                    if (nextGemBehaviour.isMatched)
                     {
-                        if (!currentGem.isSquareClearGem)
+                        if (!nextGemBehaviour.isColorClearGem)
                         {
-                            currentGem.isMatched = false;
-                            currentGem.CreateSpecialGem(SpecialGem.SQUARE_CLEAR);
-                        }
-                    }
-                    else
-                    {
-                        if (currentGem.nextGem != null)
-                        {
-                            GemBehaviour nextGemBehaviour = currentGem.nextGem.GetComponent<GemBehaviour>();
-                            if (nextGemBehaviour.isMatched)
-                            {
-                                if (!nextGemBehaviour.isSquareClearGem)
-                                {
-                                    nextGemBehaviour.isMatched = false;
-                                    nextGemBehaviour.CreateSpecialGem(SpecialGem.SQUARE_CLEAR);
-                                }
-                            }
+                            nextGemBehaviour.isMatched = false;
+                            nextGemBehaviour.CreateSpecialGem(SpecialGem.COLOR_CLEAR);
                         }
                     }
                 }
             }
+        }
+    }
+
+
+    public void CheckToSetSpecialClearSquareGem()
+    {
+        if (currentGem != null)
+        {
+            if (currentGem.isMatched)
+            {
+                if (!currentGem.isSquareClearGem)
+                {
+                    currentGem.isMatched = false;
+                    currentGem.CreateSpecialGem(SpecialGem.SQUARE_CLEAR);
+                }
+            }
+            else
+            {
+                if (currentGem.nextGem != null)
+                {
+                    GemBehaviour nextGemBehaviour = currentGem.nextGem.GetComponent<GemBehaviour>();
+                    if (nextGemBehaviour.isMatched)
+                    {
+                        if (!nextGemBehaviour.isSquareClearGem)
+                        {
+                            nextGemBehaviour.isMatched = false;
+                            nextGemBehaviour.CreateSpecialGem(SpecialGem.SQUARE_CLEAR);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    public void CheckToSetSpecialClearRowOrColumnGem()
+    {
+        if (currentGem != null)
+        {
+            if (currentGem.isMatched)
+            {
+                SetSpecialClearRowOrColumnGem(currentGem);
+            }
+            else if (currentGem.nextGem != null)
+            {
+                GemBehaviour nextGem = currentGem.nextGem.GetComponent<GemBehaviour>();
+
+                if (nextGem.isMatched)
+                {
+                    SetSpecialClearRowOrColumnGem(nextGem);
+                }
+
+            }
+        }
+    }
+
+
+    private void SetSpecialClearRowOrColumnGem(GemBehaviour gem)
+    {
+        gem.isMatched = false;
+
+        if ((currentGem.changedAngle > -45.0f && currentGem.changedAngle <= 45.0f) || (currentGem.changedAngle <= -135.0f || currentGem.changedAngle > 135.0f))
+        {
+            gem.CreateSpecialGem(SpecialGem.ROW_CLEAR);
+        }
+        else
+        {
+            gem.CreateSpecialGem(SpecialGem.COLUMN_CLEAR);
+        }
+    }
+
+    private void SetUpCamera(float x, float y)
+    {
+        Vector3 temPos = new Vector3(x / 2, y / 2, -10.0f);
+        Camera.main.transform.position = temPos;
+
+        if (width >= height)
+        {
+            Camera.main.orthographicSize = (width / 2 + padding) * aspectRatio;
+        }
+        else
+        {
+            Camera.main.orthographicSize = height / 2 + padding;
         }
     }
 
@@ -374,7 +620,16 @@ public class BoardGenerator : MonoBehaviour
             }
 
             //currentMatches.Remove(board[column, row]);
+
+            if(matchingSound != null)
+            {
+                matchingSound.Play();
+            }
+
             Destroy(board[column, row]);
+
+            score += gemScore * streak;
+
             board[column, row] = null;
         }
     }
@@ -420,7 +675,7 @@ public class BoardGenerator : MonoBehaviour
             }
         }
 
-        yield return  new WaitForSeconds(0.5f);
+        yield return  new WaitForSeconds(refillDelay * 0.5f);
 
         StartCoroutine(FillAndCheckBoard());
     }
@@ -434,7 +689,15 @@ public class BoardGenerator : MonoBehaviour
                 if(board[i,j] == null && !immovableboard[i, j])
                 {
                     Vector3 temPos = new Vector3(i, j + offSet, 0);
-                    int currentGem = Random.Range(0, gemTypes.Length);
+                    int currentGem = Random.Range(0, GemTypesToUse());
+                    int maxIterations = 0;
+                    while(MatchesAt(i, j , gemTypes[currentGem]) && maxIterations < 100)
+                    {
+                        maxIterations++;
+                        currentGem = Random.Range(0, GemTypesToUse());
+                    }
+                    maxIterations = 0;
+
                     GameObject temp = Instantiate(gemTypes[currentGem], temPos, Quaternion.identity);
                     board[i, j] = temp;
                     temp.GetComponent<GemBehaviour>().row = j;
@@ -467,19 +730,20 @@ public class BoardGenerator : MonoBehaviour
     {
         RefillBoard();
 
-        yield return new WaitForSeconds(0.4f);
+        yield return new WaitForSeconds(refillDelay);
 
         while(MatchesOnBoard())
         {
-            yield return new WaitForSeconds(0.4f);
-
+            streak ++;
             DestroyAllMatchesGem();
+
+            yield return new WaitForSeconds(2 * refillDelay);   
         }
 
         currentMatchesList.Clear();
         currentGem = null;
 
-        yield return new WaitForSeconds(0.4f);
+        yield return new WaitForSeconds(refillDelay);
 
         currentState = GameState.MOVE;
     }
@@ -651,8 +915,15 @@ public class BoardGenerator : MonoBehaviour
         {
             if (board[column, i] != null)
             {
+                GemBehaviour gemBehaviour = board[column, i].GetComponent<GemBehaviour>();
+
+                if(gemBehaviour.isRowClearGem)
+                {
+                    gems.Union(MatchedGemsInRow(i)).ToList();
+                }
+
                 gems.Add(board[column, i]);
-                board[column, i].GetComponent<GemBehaviour>().isMatched = true;
+                gemBehaviour.isMatched = true;
                 }
         }
 
@@ -667,8 +938,15 @@ public class BoardGenerator : MonoBehaviour
         {
             if (board[i, row] != null)
             {
+                GemBehaviour gemBehaviour = board[i, row].GetComponent<GemBehaviour>();
+
+                if (gemBehaviour.isColumnClearGem)
+                {
+                    gems.Union(MatchedGemsInColumn(i)).ToList();
+                }
+
                 gems.Add(board[i, row]);
-                board[i, row].GetComponent<GemBehaviour>().isMatched = true;
+                gemBehaviour.isMatched = true;
             }
         }
 
@@ -686,8 +964,11 @@ public class BoardGenerator : MonoBehaviour
             {
                 if(i >= 0 && i < width && j >=0 && j < height)
                 {
-                    gems.Add(board[i, j]);
-                    board[i, j].GetComponent<GemBehaviour>().isMatched = true;
+                    if(board[i,j] != null)
+                    {
+                        gems.Add(board[i, j]);
+                        board[i, j].GetComponent<GemBehaviour>().isMatched = true;
+                    }       
                 }
             }
         }
@@ -696,58 +977,7 @@ public class BoardGenerator : MonoBehaviour
     }
 
 
-    public void CheckToSetSpecialClearRowOrColumnGem()
-    {
-        if(currentGem != null)
-        {
-            if(currentGem.isMatched)
-            {
-                SetSpecialClearRowOrColumnGem(currentGem);
-            }
-            else if(currentGem.nextGem != null)
-            {
-                GemBehaviour nextGem = currentGem.nextGem.GetComponent<GemBehaviour>();
-
-                if(nextGem.isMatched)
-                {
-                    SetSpecialClearRowOrColumnGem(nextGem);
-                }
-
-                
-  
-            }
-        }
-    }
-
-
-    private void SetSpecialClearRowOrColumnGem(GemBehaviour gem)
-    {
-        gem.isMatched = false;
-
-        if ((currentGem.changedAngle > -45.0f && currentGem.changedAngle <= 45.0f) || (currentGem.changedAngle <= -135.0f || currentGem.changedAngle > 135.0f))
-        {
-            gem.CreateSpecialGem(SpecialGem.ROW_CLEAR);
-        }
-        else
-        {
-            gem.CreateSpecialGem(SpecialGem.COLUMN_CLEAR);
-        }
-    }
-
-    private void SetUpCamera(float x, float y)
-    {
-        Vector3 temPos = new Vector3(x / 2, y / 2, -10.0f);
-        Camera.main.transform.position = temPos;
-
-        if(width >= height)
-        {
-            Camera.main.orthographicSize = (width / 2 + padding) * aspectRatio;
-        }
-        else
-        {
-            Camera.main.orthographicSize = height / 2 + padding;
-        }
-    }
+   
 
     
 }
